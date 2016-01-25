@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+_usage () {
+  echo "git ssh <remote>"
+  echo "git ssh <remote> command"
+  echo "git ssh <remote> -t command"
+  exit 1
+}
+
+_getRemoteHost () {
+  git config remote."$1".url | cut -d: -f1
+}
+
+_getRemoteDirectory () {
+  git config remote."$1".url | cut -d: -f2
+}
+
+case $1 in
+  h|help|\?|-h|--help)
+    _usage
+    ;;
+  *)
+    remote="$1"
+    shift
+    ;;
+esac
+
+case $1 in
+  '') ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && exec bash -l";;
+  *)  ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && $@";;
+esac
