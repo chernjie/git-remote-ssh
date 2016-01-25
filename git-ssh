@@ -1,32 +1,7 @@
 #!/usr/bin/env bash
 
-_usage () {
-  echo "usage: git ssh <remote>"
-  echo "   or: git ssh <remote> [-t] <command>"
-  exit 1
-}
-
-_error () {
-  echo "$@" >&2
-  exit 1
-}
-
-get_remote_url () {
-  if ! git config remote."$1".url > /dev/null
-  then
-    _error "Remote $1 does not exist in your git config"
-  fi
-  local remote_url=$(git config remote."$1".url)
-  case $remote_url in
-    file://*)    _error "Protocol not supported: $remote_url";;
-    https://*)   _error "Protocol not supported: $remote_url";;
-    http://*)    _error "Protocol not supported: $remote_url";;
-    git://*)     _error "Protocol not supported: $remote_url";;
-    git+ssh://*) echo "$remote_url";;
-    ssh://*)     echo "$remote_url";;
-    *:*)         echo "$remote_url";;
-  esac
-}
+USAGE="[ssh options] <remote> [command]"
+. $(git --exec-path)/git-sh-setup
 
 _getRemoteHost () {
   case $1 in
@@ -49,13 +24,15 @@ _sshcd () {
   exit $?
 }
 
-case $1 in
-  ''|h|help|\?|-h|--help)
-    _usage
+remote="$1"; shift
+test -z "$remote" && usage
+remote_url=$(git config remote."$remote".url)
+case "$remote_url" in
+  '')
+    die "Could not find url for $remote"
     ;;
-  *)
-    remote_url=$(get_remote_url "$1")
-    shift
+  file://*|https://*|https://*|git://*)
+    die "Protocol not supported: ${remote_url%%://}"
     ;;
 esac
 
