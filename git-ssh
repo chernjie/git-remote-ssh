@@ -28,8 +28,7 @@ case $1 in
 esac
 
 # TODO: add support for all other SSH options, especially -t and -T
-# TODO: add support for zsh
 case $1 in
-  '') ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && exec bash -l";;
+  '') ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && exec "'${SHELL:-/bin/bash}';;
   *)  ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && $@";;
 esac
