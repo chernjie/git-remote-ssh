@@ -3,24 +3,19 @@
 USAGE="[ssh options] <remote> [command]"
 . $(git --exec-path)/git-sh-setup
 
-_getRemoteHost () {
-  case $1 in
-    git+ssh://*) echo "$1" | cut -d/ -f3;;
-    ssh://*)     echo "$1" | cut -d/ -f3;;
-    *:*)         echo "$1" | cut -d: -f1;;
-  esac
-}
-
-_getRemoteDirectory () {
-  case $1 in
-    git+ssh://*) echo "$1" | cut -d/ -f4-;;
-    ssh://*)     echo "$1" | cut -d/ -f4-;;
-    *:*)         echo "$1" | cut -d: -f2;;
-  esac
-}
-
 _sshcd () {
-  ssh "$(_getRemoteHost "$remote_url")" $ssh_opts $ssh_tty "cd '"$(_getRemoteDirectory "$remote_url")"' && $@"
+  case "$remote_url" in
+    git+ssh://*|ssh://*)
+      url="${remote_url#*://}"
+      host="${url%%/*}"
+      path="${url#*/}"
+      ;;
+    *)
+      host="${remote_url%%:*}"
+      path="${remote_url#*:}"
+      ;;
+  esac
+  ssh "$host" $ssh_opts $ssh_tty "cd '$path' && $@"
   exit $?
 }
 
