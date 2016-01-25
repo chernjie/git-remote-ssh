@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
 _usage () {
-  echo "git ssh <remote>"
-  echo "git ssh <remote> command"
-  echo "git ssh <remote> -t command"
+  echo "usage: git ssh <remote>"
+  echo "   or: git ssh <remote> [-t] <command>"
   exit 1
 }
 
@@ -18,7 +17,7 @@ _getRemoteDirectory () {
 }
 
 case $1 in
-  h|help|\?|-h|--help)
+  ''|h|help|\?|-h|--help)
     _usage
     ;;
   *)
