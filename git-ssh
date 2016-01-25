@@ -7,6 +7,8 @@ _usage () {
   exit 1
 }
 
+# TODO: add support for git+ssh://
+# TODO: add support for ssh://
 _getRemoteHost () {
   git config remote."$1".url | cut -d: -f1
 }
@@ -25,6 +27,8 @@ case $1 in
     ;;
 esac
 
+# TODO: add support for all other SSH options, especially -t and -T
+# TODO: add support for zsh
 case $1 in
   '') ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && exec bash -l";;
   *)  ssh $(_getRemoteHost "$remote") -t "cd $(_getRemoteDirectory "$remote") && $@";;
