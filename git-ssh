@@ -16,6 +16,11 @@ _getRemoteDirectory () {
   git config remote."$1".url | cut -d: -f2
 }
 
+_sshcd () {
+  ssh "$(_getRemoteHost "$remote")" $ssh_opts $ssh_tty "cd '"$(_getRemoteDirectory "$remote")"' && $@"
+  exit $?
+}
+
 case $1 in
   ''|h|help|\?|-h|--help)
     _usage
@@ -26,8 +31,30 @@ case $1 in
     ;;
 esac
 
-# TODO: add support for all other SSH options, especially -t and -T
-case $1 in
-  '') ssh "$(_getRemoteHost "$remote")" -t "cd '"$(_getRemoteDirectory "$remote")"' && exec "'${SHELL:-/bin/bash}';;
-  *)  ssh "$(_getRemoteHost "$remote")" -t "cd '"$(_getRemoteDirectory "$remote")"' && $@";;
-esac
+ssh_opts=""
+ssh_tty=""
+while true
+do
+  case $1 in
+    -1|-2|-4|-6|-A|-a|-C|-f|-g|-K|-k|-M|-N|-n|-q|-s|-V|-v|-X|-x|-Y|-y)
+      ssh_opts="$ssh_opts $1"
+      shift
+      ;;
+    -b|-c|-D|-e|-F|-I|-i|-L|-l|-m|-O|-o|-p|-R|-S|-W|-w)
+      ssh_opts="$ssh_opts $1 $2"
+      shift
+      shift
+      ;;
+    -t|-T)
+      ssh_tty="$1"
+      shift
+      ;;
+    '')
+      ssh_tty=${ssh_tty:--t}
+      _sshcd "exec "'${SHELL:-/bin/bash}'
+      ;;
+    *)
+      _sshcd "$@"
+      ;;
+  esac
+done
