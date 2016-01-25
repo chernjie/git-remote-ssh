@@ -3,23 +3,40 @@
 USAGE="[ssh options] <remote> [command]"
 . $(git --exec-path)/git-sh-setup
 
-_sshcd () {
-  case "$remote_url" in
-    git+ssh://*|ssh://*)
-      url="${remote_url#*://}"
-      host="${url%%/*}"
-      path="${url#*/}"
-      ;;
-    *)
-      host="${remote_url%%:*}"
-      path="${remote_url#*:}"
-      ;;
-  esac
-  ssh "$host" $ssh_opts $ssh_tty "cd '$path' && $@"
-  exit $?
+declare -a ssh_opts
+declare -a ssh_args
+
+expect_more() {
+  opt="${1:1}"
+  while [ -n "$opt" ]; do
+    cur="${opt:0:1}"
+    opt="${opt:1}"
+    [[ "$cur" =~ [tT] ]] && seen_tty=yes
+    if [[ "$cur" =~ [bcDeFIiLlmOopRSWw] ]]; then
+      test -z "$opt"
+      return
+    fi
+  done
+  return 1
 }
 
-remote="$1"; shift
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -*)
+      expect_more "$1" && { ssh_opts[${#ssh_opts[@]}]="$1"; shift; }
+      ssh_opts[${#ssh_opts[@]}]="$1"; shift
+      ;;
+    *)
+      if [ -z "$remote" ]; then
+        remote="$1";
+        shift
+      else
+        while [ $# -gt 0 ]; do ssh_args[${#ssh_args[@]}]="$1"; shift; done
+      fi
+      ;;
+  esac
+done
+
 test -z "$remote" && usage
 remote_url=$(git config remote."$remote".url)
 case "$remote_url" in
@@ -31,30 +48,24 @@ case "$remote_url" in
     ;;
 esac
 
-ssh_opts=""
-ssh_tty=""
-while true
-do
-  case $1 in
-    -1|-2|-4|-6|-A|-a|-C|-f|-g|-K|-k|-M|-N|-n|-q|-s|-V|-v|-X|-x|-Y|-y)
-      ssh_opts="$ssh_opts $1"
-      shift
-      ;;
-    -b|-c|-D|-e|-F|-I|-i|-L|-l|-m|-O|-o|-p|-R|-S|-W|-w)
-      ssh_opts="$ssh_opts $1 $2"
-      shift
-      shift
-      ;;
-    -t|-T)
-      ssh_tty="$1"
-      shift
-      ;;
-    '')
-      ssh_tty=${ssh_tty:--t}
-      _sshcd "exec "'${SHELL:-/bin/bash}'
-      ;;
-    *)
-      _sshcd "$@"
-      ;;
-  esac
-done
+case "$remote_url" in
+  git+ssh://*|ssh://*)
+    url="${remote_url#*://}"
+    host="${url%%/*}"
+    path="${url#*/}"
+    ;;
+  *)
+    host="${remote_url%%:*}"
+    path="${remote_url#*:}"
+    ;;
+esac
+
+if [ ${#ssh_args[@]} -eq 0 ]; then
+  if [ "$seen_tty" != yes ]; then
+    ssh_opts[${#ssh_opts[@]}]="-t"
+  fi
+  ssh_args[0]="${SHELL:-/bin/bash}"
+  ssh_args[1]="-l"
+fi
+
+exec ssh "$host" "${ssh_opts[@]}" "cd \"$path\" && $(git rev-parse --sq-quote "${ssh_args[@]}")"
