@@ -6,18 +6,46 @@ _usage () {
   exit 1
 }
 
-# TODO: add support for git+ssh://
-# TODO: add support for ssh://
+_error () {
+  echo "$@" >&2
+  exit 1
+}
+
+get_remote_url () {
+  if ! git config remote."$1".url > /dev/null
+  then
+    _error "Remote $1 does not exist in your git config"
+  fi
+  local remote_url=$(git config remote."$1".url)
+  case $remote_url in
+    file://*)    _error "Protocol not supported: $remote_url";;
+    https://*)   _error "Protocol not supported: $remote_url";;
+    http://*)    _error "Protocol not supported: $remote_url";;
+    git://*)     _error "Protocol not supported: $remote_url";;
+    git+ssh://*) echo "$remote_url";;
+    ssh://*)     echo "$remote_url";;
+    *:*)         echo "$remote_url";;
+  esac
+}
+
 _getRemoteHost () {
-  git config remote."$1".url | cut -d: -f1
+  case $1 in
+    git+ssh://*) echo "$1" | cut -d/ -f3;;
+    ssh://*)     echo "$1" | cut -d/ -f3;;
+    *:*)         echo "$1" | cut -d: -f1;;
+  esac
 }
 
 _getRemoteDirectory () {
-  git config remote."$1".url | cut -d: -f2
+  case $1 in
+    git+ssh://*) echo "$1" | cut -d/ -f4-;;
+    ssh://*)     echo "$1" | cut -d/ -f4-;;
+    *:*)         echo "$1" | cut -d: -f2;;
+  esac
 }
 
 _sshcd () {
-  ssh "$(_getRemoteHost "$remote")" $ssh_opts $ssh_tty "cd '"$(_getRemoteDirectory "$remote")"' && $@"
+  ssh "$(_getRemoteHost "$remote_url")" $ssh_opts $ssh_tty "cd '"$(_getRemoteDirectory "$remote_url")"' && $@"
   exit $?
 }
 
@@ -26,7 +54,7 @@ case $1 in
     _usage
     ;;
   *)
-    remote="$1"
+    remote_url=$(get_remote_url "$1")
     shift
     ;;
 esac
