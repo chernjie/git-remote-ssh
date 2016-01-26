@@ -1,5 +1,9 @@
 # bash completion
 
+_git_ssh(){
+  __git_complete_remote_or_refspec
+}
+
 _git_scp(){
   __git_complete_remote_or_refspec
 }
