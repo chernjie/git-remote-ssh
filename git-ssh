@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-USAGE="[ssh options] <remote> [command]"
+USAGE="[ssh options] <remote> [<command>]"
 . $(git --exec-path)/git-sh-setup
 
 declare -a ssh_opts
