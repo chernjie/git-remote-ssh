@@ -22,6 +22,7 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 USAGE="[ssh options] <remote> [<command>]"
+LONG_USAGE="$(git config --get-regexp remote.*.url | sed -e s/remote.// -e s/.url// | column -t)"
 . $(git --exec-path)/git-sh-setup
 
 declare -a ssh_opts
