@@ -97,6 +97,19 @@ function _sanitize()
 	return $?
 }
 
+# after push hooks
+# depends on git-ssh
+function _afterpush()
+{
+	git config --get-all extras.scp.afterpush | while read i
+	do
+		case $i in
+			chown*) git ssh $remote $i $@;; # git config --add extras.scp.afterpush "chown -v :www-data"
+		esac
+	done
+	return $?
+}
+
 function scp_and_stage
 {
 	set_remote $1
@@ -133,6 +146,7 @@ function scp_and_stage
 		_info Pushing to $remote \($(git config remote.$remote.url)\) &&
 		rsync -rlDv --files-from=$_TMP ./ "$(git config remote.$remote.url)/" &&
 		git add --force $list &&
+		_afterpush $list &&
 		rm $_TMP
 	fi
 
