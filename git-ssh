@@ -86,7 +86,7 @@ if [ ${#ssh_args[@]} -eq 0 ]; then
   if [ "$seen_tty" != yes ]; then
     ssh_opts[${#ssh_opts[@]}]="-t"
   fi
-  ssh_args[0]="${SHELL:-/bin/bash}"
+  ssh_args[0]="`basename ${SHELL:-/bin/bash}`"
   ssh_args[1]="-l"
 fi
 
